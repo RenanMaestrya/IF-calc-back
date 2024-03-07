@@ -10,26 +10,6 @@ export class StudentsService {
     private readonly StudentRepository: Repository<Student>,
   ) {}
 
-  // addGrade(studentId: number, grade: number): Student {
-  //   let student = this.students.find((student) => student.id == studentId);
-
-  //   if (!student) {
-  //     student = {
-  //       id: studentId,
-  //       name: '',
-  //       registrationNumber: '',
-  //       dateOfBirth: new Date(),
-  //       course: '',
-  //       grades: [grade],
-  //     };
-  //     this.students.push(student);
-  //   } else {
-  //     student.grades.push(grade);
-  //   }
-
-  //   return student;
-  // }
-
   async calculateAverage(studentId: number): Promise<number> {
     const student = await this.StudentRepository.findOneOrFail({
       where: { id: studentId },
@@ -51,7 +31,6 @@ export class StudentsService {
     });
 
     const sum = gradesAsNumbers.reduce((acc, grade) => acc + grade, 0);
-
     return sum / gradesAsNumbers.length;
   }
 
@@ -68,8 +47,24 @@ export class StudentsService {
   }
 
   async createStudent(createStudent: Student): Promise<Student> {
-    const student = this.StudentRepository.create(createStudent);
-    return await this.StudentRepository.save(student);
+    const existingStudent = await this.StudentRepository.findOne({
+      where: { name: createStudent.name },
+    });
+
+    interface StudentWithAverage extends Student {
+      average: number;
+    }
+
+    if (existingStudent) {
+      const updatedStudent = { ...existingStudent, ...createStudent };
+      const updated = await this.StudentRepository.save(updatedStudent);
+      const average = await this.calculateAverage(updated.id);
+      return { ...updated, average } as StudentWithAverage;
+    } else {
+      const newStudent = await this.StudentRepository.save(createStudent);
+      const average = await this.calculateAverage(newStudent.id);
+      return { ...newStudent, average } as StudentWithAverage;
+    }
   }
 
   async updateStudent(
