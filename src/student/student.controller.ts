@@ -7,20 +7,12 @@ import {
   Body,
   Param,
 } from '@nestjs/common';
-import { StudentsService } from './students.service';
-import { Student } from '../models/student.model';
+import { StudentsService } from './student.service';
+import { Student } from './student.entity';
 
 @Controller('students')
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
-
-  @Post(':studentId/grades')
-  addGrade(
-    @Param('studentId') studentId: number,
-    @Body('grade') grade: number,
-  ) {
-    return this.studentsService.addGrade(studentId, grade);
-  }
 
   @Get(':studentId/average')
   calculateAverage(@Param('studentId') studentId: number) {
@@ -38,8 +30,8 @@ export class StudentsController {
   }
 
   @Post()
-  createStudent(@Body() student: Student) {
-    return this.studentsService.createStudent(student);
+  async createStudent(@Body() student: Promise<Student>) {
+    return this.studentsService.createStudent(await student);
   }
 
   @Put(':id')
